@@ -128,6 +128,9 @@ def run(
         dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt, vid_stride=vid_stride)
     vid_path, vid_writer = [None] * bs, [None] * bs
 
+    # output plot data file
+    open('runs/segmentation_logs.txt', 'w').close()
+
     # Run inference
     model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
     seen, windows, dt = 0, [], (Profile(device=device), Profile(device=device), Profile(device=device))
@@ -182,10 +185,16 @@ def run(
                         for x in reversed(masks2segments(masks))
                     ]
 
-                # Print results
+                # Print results   
+                log_str = ""
                 for c in det[:, 5].unique():
                     n = (det[:, 5] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
+                    log_str += f"{int(c)} {int(n)}, "  # add to log string
+
+                # log segmentation results
+                with open(f"runs/segmentation_logs.txt", "a") as segmentation_logs:
+                    segmentation_logs.write(log_str + "\n")
 
                 # Mask plotting
                 annotator.masks(
